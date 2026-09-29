@@ -1,0 +1,9 @@
+.next/
+node_modules/
+.env
+.env.local
+.env.*.local
+public/sw*
+public/swe-worker*
+.DS_Store
+*.log
