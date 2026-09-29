@@ -9,11 +9,4 @@ export const ui = {
   'zh-TW': { essays:'散文', archive:'檔案', about:'關於我們', signup:'註冊', subscribe:'訂閱', contact:'聯絡我們', donate:'捐贈', search:'搜尋', menu:'選單', closeMenu:'關閉選單', language:'語言', theme:'主題', light:'淺色', dark:'深色', latest:'最新散文', motto:'人生未完成…', dek:'書寫人與世界的關係。', categories:'哲學 · 自然 · 人權 · 環境 · 社會 · 歷史 · 政治', aboutUs:'關於我們', ourVision:'我們的願景', ourArchive:'我們的檔案', commentingPrinciples:'評論原則', privacyPolicy:'隱私政策', termsOfUse:'使用條款', accessibilityStatement:'無障礙聲明', donationStatement:'捐贈聲明', contactUs:'聯絡我們' }
 } as const
 
-export const articles = [
-  {slug:'where-the-world-begins', category:'Philosophy', title:'Where does the world begin?', dek:'A boundary is not only where one thing ends. It is also where relation becomes visible.', author:'Mira Vale', date:'2026-09-24'},
-  {slug:'the-river-keeps-a-record', category:'Environment', title:'The river keeps a record', dek:'Pollution has a history, but so does repair. Both can be read in water.', author:'Elias Chen', date:'2026-09-18'},
-  {slug:'rights-without-distance', category:'Human rights', title:'Rights without distance', dek:'What changes when another person’s suffering reaches us as an image before it reaches us as a fact?', author:'Nadia Laurent', date:'2026-09-11'},
-  {slug:'ordinary-history', category:'History', title:'The ordinary scale of history', dek:'Grand narratives are built from small rooms, repeated gestures and decisions that rarely make archives.', author:'Jonas Wei', date:'2026-08-30'}
-]
-
-
+export const articles: {slug:string;category:string;title:string;dek:string;author:string;date:string}[] = []

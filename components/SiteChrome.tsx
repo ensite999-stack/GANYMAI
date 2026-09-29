@@ -1,44 +1,30 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
-import { Locale, locales, ui } from '@/lib/content'
+import { ui } from '@/lib/content'
 import { BrandName } from '@/components/BrandName'
-
-const localeLabels: Record<Locale,string> = {
-  en:'English',
-  fr:'Français',
-  'zh-CN':'简体中文',
-  'zh-TW':'繁體中文'
-}
+import { BrandMark } from '@/components/BrandMark'
 
 export function SiteChrome({children}:{children:React.ReactNode}) {
   const pathname=usePathname()
-  const [locale,setLocale] = useState<Locale>('en')
   const [dark,setDark] = useState(false)
   const [menuMounted,setMenuMounted] = useState(false)
   const [menuOpen,setMenuOpen] = useState(false)
-  const [languageOpen,setLanguageOpen] = useState(false)
   const [search,setSearch] = useState(false)
   const [visible,setVisible] = useState(true)
   const [solid,setSolid] = useState(false)
-  const t = useMemo(()=>ui[locale],[locale])
+  const t = ui.en
   const currentYear = new Date().getFullYear()
 
   useEffect(()=>{
-    const saved=(localStorage.getItem('ganymai-locale') as Locale|null)
-    if(saved && locales.includes(saved)) setLocale(saved)
     setDark(localStorage.getItem('ganymai-theme')==='dark')
   },[])
   useEffect(()=>{
     document.documentElement.dataset.theme=dark?'dark':'light'
     localStorage.setItem('ganymai-theme',dark?'dark':'light')
   },[dark])
-  useEffect(()=>{
-    localStorage.setItem('ganymai-locale',locale)
-    document.documentElement.lang=locale
-  },[locale])
   useEffect(()=>{
     let last=window.scrollY
     const onScroll=()=>{ const y=window.scrollY; setSolid(y>32); setVisible(y<80 || y<last); last=y }
@@ -58,25 +44,19 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
 
   function openMenu(){
     setSearch(false)
-    setLanguageOpen(false)
     setMenuMounted(true)
     requestAnimationFrame(()=>setMenuOpen(true))
   }
   function closeMenu(){
     setMenuOpen(false)
-    setLanguageOpen(false)
     window.setTimeout(()=>setMenuMounted(false),280)
-  }
-  function chooseLocale(next:Locale){
-    setLocale(next)
-    setLanguageOpen(false)
   }
 
   if(pathname.startsWith('/studio')) return <>{children}</>
 
   return <>
     <header className={`topbar ${solid?'solid':''} ${visible?'show':'hide'}`}>
-      <button className="logo" aria-label="Go back" onClick={()=>history.length>1?history.back():(location.href='/')}>Γ</button>
+      <button className="logo" aria-label="Go back" onClick={()=>history.length>1?history.back():(location.href='/')}><BrandMark className="brand-mark" /></button>
       <div className="top-actions">
         <button className="search-button" onClick={()=>setSearch(v=>!v)}>{t.search}</button>
         <Link className="desktop-only top-link" href="/subscribe">{t.subscribe}</Link>
@@ -103,14 +83,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
           <button className="setting-button" onClick={()=>setDark(v=>!v)}>
             <span>{t.theme}</span><b>{dark?t.dark:t.light}</b>
           </button>
-          <div className="language-picker">
-            <button className="setting-button" onClick={()=>setLanguageOpen(v=>!v)} aria-expanded={languageOpen}>
-              <span>{t.language}</span><b>{localeLabels[locale]}</b>
-            </button>
-            <div className={`language-options ${languageOpen?'open':''}`}>
-              {locales.map(x=><button className={x===locale?'active':''} key={x} onClick={()=>chooseLocale(x)}>{localeLabels[x]}</button>)}
-            </div>
-          </div>
           <div className="social"><a href="https://facebook.com">Facebook</a><a href="https://x.com">X</a></div>
         </div>
       </aside>
@@ -120,7 +92,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     <footer className="site-footer">
       <div className="footer-brand"><BrandName /></div>
       <p className="footer-motto">{t.motto}</p>
-      <a className="footer-email" href="mailto:hello@Ganymai.com">hello@Ganymai.com</a>
       <nav className="footer-links" aria-label="Footer">
         <Link href="/about">{t.aboutUs}</Link>
         <Link href="/vision">{t.ourVision}</Link>
@@ -130,7 +101,10 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
         <Link href="/terms">{t.termsOfUse}</Link>
         <Link href="/accessibility">{t.accessibilityStatement}</Link>
         <Link href="/donation-statement">{t.donationStatement}</Link>
-        <Link href="/contact">{t.contactUs}</Link>
+        <div className="footer-contact">
+          <Link href="/contact">{t.contactUs}</Link>
+          <a href="mailto:hello@Ganymai.com">hello@Ganymai.com</a>
+        </div>
       </nav>
       <p className="footer-copyright">© <span suppressHydrationWarning>{currentYear}</span> <BrandName /></p>
     </footer>
