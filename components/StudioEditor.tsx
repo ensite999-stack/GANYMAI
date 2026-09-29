@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useRef,useState} from 'react'
 import {createSupabaseBrowserClient} from '@/lib/supabase'
 import {BRAND_NAME} from '@/lib/brand'
+import {BrandName} from '@/components/BrandName'
 
 type Block={id:string,type:'paragraph'|'image',text?:string,url?:string,caption?:string,author?:string,source?:string,fingerprint?:string,collapsed?:boolean}
 const id=()=>crypto.randomUUID()
@@ -45,7 +46,7 @@ export function StudioEditor(){
     if(blockError){await supabase.from('articles').delete().eq('id',article.id); setNotice(`Publish rolled back: ${blockError.message}`);return}
     setNotice(`Published as ${slug}.`)
   }
-  return <div className="studio-shell"><aside><div className="studio-logo">Γ</div><b>{BRAND_NAME} Studio</b><p>Modular article editor</p><a href="/">← Public site</a></aside><section className="studio-main">
+  return <div className="studio-shell"><aside><div className="studio-logo">Γ</div><b><BrandName /> Studio</b><p>Modular article editor</p><a href="/">← Public site</a></aside><section className="studio-main">
     <div className="studio-top"><div><small>ARTICLE</small><h1>{title||'Untitled draft'}</h1></div><div><button onClick={()=>setNotice('Draft saved locally.')}>Save draft</button><button className="primary" onClick={publish}>Publish</button></div></div>
     <div className="notice">{notice}</div>
     <div className="field-grid"><label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label><label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}>{['Philosophy','Nature','Human rights','Environment','Society','History','Politics'].map(x=><option key={x}>{x}</option>)}</select></label><label>Tags<input value={tags} onChange={e=>setTags(e.target.value)} placeholder="world, memory, river"/></label><label className="full">Cover<input value={cover} onChange={e=>setCover(e.target.value)} placeholder="Paste image URL or upload in media block"/></label></div>

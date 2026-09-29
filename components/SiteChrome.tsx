@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Locale, locales, ui } from '@/lib/content'
-import { BRAND_NAME } from '@/lib/brand'
+import { BrandName } from '@/components/BrandName'
 
 const localeLabels: Record<Locale,string> = {
   en:'English',
@@ -81,7 +81,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
         <button className="search-button" onClick={()=>setSearch(v=>!v)}>{t.search}</button>
         <Link className="desktop-only top-link" href="/subscribe">{t.subscribe}</Link>
         <Link className="desktop-only top-link" href="/archive">{t.archive}</Link>
-        <button className="menu-plus" aria-label={t.menu} onClick={openMenu}>+</button>
+        <button className="menu-button" aria-label={t.menu} onClick={openMenu}><i/><i/><i/></button>
       </div>
       {search && <div className="search-panel"><input autoFocus placeholder={`${t.search}…`} /><button onClick={()=>setSearch(false)}>×</button></div>}
     </header>
@@ -89,7 +89,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     {menuMounted && <div className={`menu-layer ${menuOpen?'open':''}`}>
       <button className="menu-backdrop" aria-label={t.closeMenu} onClick={closeMenu}/>
       <aside className="menu-drawer" role="dialog" aria-modal="true" aria-label={t.menu}>
-        <div className="menu-head"><strong>{BRAND_NAME}</strong><button aria-label={t.closeMenu} onClick={closeMenu}>×</button></div>
+        <div className="menu-head"><strong><BrandName /></strong><button aria-label={t.closeMenu} onClick={closeMenu}>×</button></div>
         <nav className="menu-links">
           <Link onClick={closeMenu} href="/about">{t.about}</Link>
           <Link onClick={closeMenu} href="/">{t.essays}</Link>
@@ -118,7 +118,9 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
 
     <main>{children}</main>
     <footer className="site-footer">
-      <div className="footer-brand">{BRAND_NAME}</div>
+      <div className="footer-brand"><BrandName /></div>
+      <p className="footer-motto">{t.motto}</p>
+      <a className="footer-email" href="mailto:hello@Ganymai.com">hello@Ganymai.com</a>
       <nav className="footer-links" aria-label="Footer">
         <Link href="/about">{t.aboutUs}</Link>
         <Link href="/vision">{t.ourVision}</Link>
@@ -130,7 +132,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
         <Link href="/donation-statement">{t.donationStatement}</Link>
         <Link href="/contact">{t.contactUs}</Link>
       </nav>
-      <p className="footer-copyright">© <span suppressHydrationWarning>{currentYear}</span> {BRAND_NAME}</p>
+      <p className="footer-copyright">© <span suppressHydrationWarning>{currentYear}</span> <BrandName /></p>
     </footer>
   </>
 }
