@@ -1,0 +1,1 @@
+export default function Page(){return <section className="text-page"><div className="eyebrow">COMMENTING PRINCIPLES</div><h1>Commenting principles.</h1><p>Discussion should address ideas directly, remain civil, avoid harassment, and make room for disagreement without dehumanising other people.</p></section>}
