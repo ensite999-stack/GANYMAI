@@ -2,6 +2,9 @@
 
 A restrained personal magazine prototype inspired by the editorial logic of long-form magazines, without copying Aeon's visual design.
 
+## Brand rule
+- The brand name is always exactly `Ganymai` in every locale. It must never be translated, transliterated, localized, or have its casing changed.
+
 ## Included
 - Γ logo, unchanged Greek capital gamma.
 - Transparent top bar; hides on scroll down and returns on scroll up with background.

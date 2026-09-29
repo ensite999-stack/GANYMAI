@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Locale, locales, ui } from '@/lib/content'
+import { BRAND_NAME } from '@/lib/brand'
 
 export function SiteChrome({children}:{children:React.ReactNode}) {
   const pathname=usePathname()
@@ -42,7 +43,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     </header>
 
     {menu && <div className="menu-sheet" role="dialog" aria-modal="true">
-      <div className="menu-head"><strong>Ganymai</strong><button onClick={()=>setMenu(false)}>×</button></div>
+      <div className="menu-head"><strong>{BRAND_NAME}</strong><button onClick={()=>setMenu(false)}>×</button></div>
       <div className="menu-grid">
         <div className="menu-links"><Link href="/about">{t.about}</Link><Link href="/">{t.essays}</Link><Link className="mobile-only" href="/archive">{t.archive}</Link><Link className="mobile-only" href="/signup">{t.signup}</Link><Link className="mobile-only" href="/subscribe">{t.subscribe}</Link><Link href="/contact">{t.contact}</Link><Link href="/donate">{t.donate}</Link></div>
         <div className="menu-meta"><button onClick={()=>setDark(false)}>{t.light}</button><button onClick={()=>setDark(true)}>{t.dark}</button><div className="locale-row">{locales.map(x=><button className={x===locale?'active':''} key={x} onClick={()=>setLocale(x)}>{x}</button>)}</div><div className="social"><a href="https://facebook.com">Facebook</a><a href="https://x.com">X</a></div></div>
@@ -50,6 +51,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     </div>}
 
     <main>{children}</main>
-    <footer><div><div className="footer-mark">Γ</div><h2>Ganymai</h2><p>{t.dek}</p><p>{t.motto}</p></div><div><p>{t.categories}</p><p>© 2026 Ganymai</p></div></footer>
+    <footer><div><div className="footer-mark">Γ</div><h2>{BRAND_NAME}</h2><p>{t.dek}</p><p>{t.motto}</p></div><div><p>{t.categories}</p><p>© 2026 {BRAND_NAME}</p></div></footer>
   </>
 }

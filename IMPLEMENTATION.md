@@ -2,6 +2,7 @@
 
 ## Brand
 - Name: Ganymai
+- Brand-name invariant: always render exactly `Ganymai`. Never translate, transliterate, localize, or alter its casing in any language.
 - Mark: Greek capital Gamma `Γ` only. No distortion, stretching, ornament or custom icon treatment.
 - Editorial idea: the relationship between people and the world.
 - Core fields: philosophy, nature, human rights, environment, society, history and politics.
