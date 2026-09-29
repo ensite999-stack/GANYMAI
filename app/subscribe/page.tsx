@@ -1,0 +1,1 @@
+export default function Page(){return <section className="text-page"><div className="eyebrow">SUBSCRIBE</div><h1>Read Ganymai by email.</h1><p>Newsletter signup will connect to the subscribers table after Supabase is configured.</p></section>}

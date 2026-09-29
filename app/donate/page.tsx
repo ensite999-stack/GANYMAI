@@ -1,0 +1,1 @@
+export default function Page(){return <section className="text-page"><div className="eyebrow">DONATE</div><h1>Support independent essays.</h1><p>This page is prepared for a future donation provider; no payment integration is assumed in the prototype.</p></section>}

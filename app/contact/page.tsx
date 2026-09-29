@@ -1,0 +1,1 @@
+export default function Page(){return <section className="text-page"><div className="eyebrow">CONTACT</div><h1>Contact Ganymai.</h1><p>Editorial, rights and general contact details can be added here when the publication address is ready.</p></section>}
