@@ -1,22 +1,252 @@
 'use client'
-import {useEffect,useMemo,useRef,useState} from 'react'
+
+import {useEffect,useRef,useState,type MouseEvent} from 'react'
 import {createSupabaseBrowserClient} from '@/lib/supabase'
 import {BRAND_NAME} from '@/lib/brand'
 import {BrandName} from '@/components/BrandName'
 
-type Block={id:string,type:'paragraph'|'image',text?:string,url?:string,caption?:string,author?:string,source?:string,fingerprint?:string,collapsed?:boolean}
-const id=()=>crypto.randomUUID()
+type Block={
+  id:string
+  type:'paragraph'|'image'
+  html?:string
+  text?:string
+  url?:string
+  caption?:string
+  author?:string
+  source?:string
+  fingerprint?:string
+}
+type Draft={
+  title:string
+  author:string
+  category:string
+  tags:string
+  cover:string
+  date:string
+  blocks:Block[]
+  articleId?:string|null
+  articleSlug?:string|null
+  articleStatus?:'draft'|'published'|'archived'
+}
+type SavedSelection={blockId:string;range:Range}
+
+const uid=()=>typeof crypto!=='undefined'&&'randomUUID' in crypto?crypto.randomUUID():`b-${Date.now()}-${Math.random().toString(36).slice(2)}`
+const fiveParagraphs=():Block[]=>Array.from({length:5},(_,i)=>({id:`paragraph-${i+1}`,type:'paragraph',html:'',text:''}))
+const emptyDraft=():Draft=>({title:'',author:'',category:'',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
+
+function escapeHtml(value:string){
+  return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+function normalizeBlocks(value:unknown):Block[]{
+  if(!Array.isArray(value)||!value.length) return fiveParagraphs()
+  return value.map((raw:any)=>raw?.type==='image'
+    ?{id:raw.id||uid(),type:'image',url:raw.url||'',caption:raw.caption||'',author:raw.author||'',source:raw.source||'',fingerprint:raw.fingerprint||''}
+    :{id:raw?.id||uid(),type:'paragraph',html:typeof raw?.html==='string'?raw.html:escapeHtml(raw?.text||''),text:raw?.text||''})
+}
+function normalizeHex(value:string){
+  const v=value.trim()
+  if(/^#[0-9a-fA-F]{3}$/.test(v)) return '#'+v.slice(1).split('').map(x=>x+x).join('').toUpperCase()
+  if(/^#[0-9a-fA-F]{6}$/.test(v)) return v.toUpperCase()
+  return null
+}
+function sanitizeRichHtml(input:string){
+  if(typeof window==='undefined') return input
+  const doc=new DOMParser().parseFromString(`<div>${input}</div>`,'text/html')
+  const root=doc.body.firstElementChild as HTMLElement
+  const allowed=new Set(['STRONG','B','EM','I','U','SPAN','BR'])
+  const all=Array.from(root.querySelectorAll('*')).reverse()
+  for(const el of all){
+    if(!allowed.has(el.tagName)){
+      el.replaceWith(...Array.from(el.childNodes))
+      continue
+    }
+    if(el.tagName==='SPAN'){
+      const style=(el as HTMLElement).style
+      const color=style.color
+      const fontSize=style.fontSize
+      Array.from(el.attributes).forEach(a=>el.removeAttribute(a.name))
+      const safe:string[]=[]
+      if(color&&(/^(#[0-9a-f]{3,8}|rgb\(|rgba\(|hsl\()/i.test(color))) safe.push(`color:${color}`)
+      if(fontSize&&/^(1\.25em|1\.5em|2em)$/.test(fontSize)) safe.push(`font-size:${fontSize}`)
+      if(safe.length) el.setAttribute('style',safe.join(';'))
+    }else{
+      Array.from(el.attributes).forEach(a=>el.removeAttribute(a.name))
+    }
+  }
+  return root.innerHTML
+}
+function textFromHtml(html:string){
+  if(typeof window==='undefined') return ''
+  const doc=new DOMParser().parseFromString(html,'text/html')
+  return doc.body.textContent||''
+}
 
 export function StudioEditor(){
-  const [title,setTitle]=useState(''); const [author,setAuthor]=useState(''); const [category,setCategory]=useState('Philosophy'); const [tags,setTags]=useState(''); const [cover,setCover]=useState(''); const [date,setDate]=useState(new Date().toISOString().slice(0,10));
-  const [blocks,setBlocks]=useState<Block[]>([{id:id(),type:'paragraph',text:''}]); const [notice,setNotice]=useState('Draft autosaves locally.'); const fileRef=useRef<HTMLInputElement>(null); const [target,setTarget]=useState<string|null>(null)
-  useEffect(()=>{const d=localStorage.getItem('ganymai-draft'); if(d){try{const x=JSON.parse(d); setTitle(x.title||''); setAuthor(x.author||''); setCategory(x.category||'Philosophy'); setTags(x.tags||''); setCover(x.cover||''); setDate(x.date||date); setBlocks(x.blocks?.length?x.blocks:blocks)}catch{}}},[])
-  useEffect(()=>{const t=setTimeout(()=>localStorage.setItem('ganymai-draft',JSON.stringify({title,author,category,tags,cover,date,blocks})),250); return()=>clearTimeout(t)},[title,author,category,tags,cover,date,blocks])
-  const used=useMemo(()=>new Set(blocks.filter(b=>b.type==='image'&&b.url).map(b=>b.url)),[blocks])
-  const isDuplicate=(bid:string,url:string)=>blocks.some(b=>b.id!==bid&&b.type==='image'&&b.url===url)
-  function addAfter(after:string,type:Block['type']){setBlocks(bs=>{const i=bs.findIndex(b=>b.id===after); const n:Block={id:id(),type,...(type==='paragraph'?{text:''}:{url:'',caption:'',author:'',source:''})}; return [...bs.slice(0,i+1),n,...bs.slice(i+1)]})}
+  const initial=emptyDraft()
+  const [title,setTitle]=useState(initial.title)
+  const [author,setAuthor]=useState(initial.author)
+  const [category,setCategory]=useState(initial.category)
+  const [tags,setTags]=useState(initial.tags)
+  const [cover,setCover]=useState(initial.cover)
+  const [date,setDate]=useState(initial.date)
+  const [blocks,setBlocks]=useState<Block[]>(initial.blocks)
+  const [articleId,setArticleId]=useState<string|null>(null)
+  const [articleSlug,setArticleSlug]=useState<string|null>(null)
+  const [articleStatus,setArticleStatus]=useState<'draft'|'published'|'archived'>('draft')
+  const [notice,setNotice]=useState('Draft autosaves locally.')
+  const [preview,setPreview]=useState(false)
+  const [color,setColor]=useState('#702691')
+  const [activeBlock,setActiveBlock]=useState<string|null>(null)
+  const [removed,setRemoved]=useState<{block:Block;index:number}|null>(null)
+  const fileRef=useRef<HTMLInputElement>(null)
+  const [target,setTarget]=useState<string|null>(null)
+  const editors=useRef<Record<string,HTMLDivElement|null>>({})
+  const savedSelection=useRef<SavedSelection|null>(null)
+
+  useEffect(()=>{
+    const d=localStorage.getItem('ganymai-draft')
+    if(!d) return
+    try{
+      const x=JSON.parse(d)
+      setTitle(x.title||'')
+      setAuthor(x.author||'')
+      setCategory(x.category||'')
+      setTags(x.tags||'')
+      setCover(x.cover||'')
+      setDate(x.date||initial.date)
+      setBlocks(normalizeBlocks(x.blocks))
+      setArticleId(x.articleId||null)
+      setArticleSlug(x.articleSlug||null)
+      setArticleStatus(x.articleStatus||'draft')
+    }catch{}
+  },[])
+
+  useEffect(()=>{
+    const capture=()=>{
+      const selection=window.getSelection()
+      if(!selection||!selection.rangeCount||selection.isCollapsed) return
+      const range=selection.getRangeAt(0)
+      const start=range.startContainer.nodeType===Node.ELEMENT_NODE?range.startContainer as Element:range.startContainer.parentElement
+      const editor=start?.closest?.('[data-rich-block]') as HTMLDivElement|null
+      if(!editor) return
+      const blockId=editor.dataset.richBlock
+      if(!blockId||!editor.contains(range.endContainer)) return
+      savedSelection.current={blockId,range:range.cloneRange()}
+      setActiveBlock(blockId)
+    }
+    document.addEventListener('selectionchange',capture)
+    return()=>document.removeEventListener('selectionchange',capture)
+  },[])
+
+  const snapshot=():Draft=>({title,author,category,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
+  useEffect(()=>{
+    const t=setTimeout(()=>localStorage.setItem('ganymai-draft',JSON.stringify(snapshot())),250)
+    return()=>clearTimeout(t)
+  },[title,author,category,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
+
+  function loadDraft(d:Draft){
+    setTitle(d.title||'')
+    setAuthor(d.author||'')
+    setCategory(d.category||'')
+    setTags(d.tags||'')
+    setCover(d.cover||'')
+    setDate(d.date||new Date().toISOString().slice(0,10))
+    setBlocks(normalizeBlocks(d.blocks))
+    setArticleId(d.articleId||null)
+    setArticleSlug(d.articleSlug||null)
+    setArticleStatus(d.articleStatus||'draft')
+  }
+  function resetDraft(){
+    loadDraft(emptyDraft())
+    setRemoved(null)
+    savedSelection.current=null
+    setActiveBlock(null)
+  }
   function patch(bid:string,p:Partial<Block>){setBlocks(bs=>bs.map(b=>b.id===bid?{...b,...p}:b))}
-  async function parseInto(bid:string,url:string){ if(isDuplicate(bid,url)){setNotice('Duplicate image blocked: this URL already exists in the article.');return} setNotice('Parsing source…'); try{const r=await fetch('/api/parse-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url})}); const m=await r.json(); if(!r.ok) throw new Error(m.error); const image=m.image||url; if(isDuplicate(bid,image)){setNotice('Duplicate image blocked after link parsing.');return} patch(bid,{url:image,author:m.author||'',source:m.site||m.source||new URL(url).hostname,caption:m.title||''}); setNotice('Source metadata parsed. Review attribution before publishing.')}catch(e){setNotice(e instanceof Error?e.message:'Parse failed') } }
+  function addAfter(after:string,type:Block['type']){
+    setBlocks(bs=>{
+      const i=bs.findIndex(b=>b.id===after)
+      const n:Block=type==='paragraph'?{id:uid(),type:'paragraph',html:'',text:''}:{id:uid(),type:'image',url:'',caption:'',author:'',source:''}
+      return [...bs.slice(0,i+1),n,...bs.slice(i+1)]
+    })
+  }
+  function addParagraph(){
+    setBlocks(bs=>[...bs,{id:uid(),type:'paragraph',html:'',text:''}])
+  }
+  function removeBlock(bid:string){
+    setBlocks(bs=>{
+      const index=bs.findIndex(b=>b.id===bid)
+      if(index<0) return bs
+      if(bs.length===1){setNotice('Keep at least one body section.');return bs}
+      setRemoved({block:bs[index],index})
+      return bs.filter(b=>b.id!==bid)
+    })
+  }
+  function undoRemove(){
+    if(!removed){setNotice('There is no removed section to restore.');return}
+    setBlocks(bs=>[...bs.slice(0,removed.index),removed.block,...bs.slice(removed.index)])
+    setRemoved(null)
+    setNotice('Removed section restored.')
+  }
+  function syncEditor(blockId:string){
+    const editor=editors.current[blockId]
+    if(!editor) return
+    const html=sanitizeRichHtml(editor.innerHTML)
+    if(html!==editor.innerHTML) editor.innerHTML=html
+    patch(blockId,{html,text:editor.innerText})
+  }
+  function applyWrap(kind:'bold'|'large'|'larger'|'color'){
+    const saved=savedSelection.current
+    if(!saved||saved.range.collapsed){setNotice('Select some text first. On mobile, long-press the text to make a selection.');return}
+    const editor=editors.current[saved.blockId]
+    if(!editor||!editor.contains(saved.range.commonAncestorContainer)){setNotice('Select text inside one paragraph first.');return}
+    let wrapper:HTMLElement
+    if(kind==='bold') wrapper=document.createElement('strong')
+    else{
+      wrapper=document.createElement('span')
+      if(kind==='large') wrapper.style.fontSize='1.25em'
+      if(kind==='larger') wrapper.style.fontSize='1.5em'
+      if(kind==='color'){
+        const hex=normalizeHex(color)
+        if(!hex){setNotice('Use a HEX colour such as #702691 or #fff.');return}
+        wrapper.setAttribute('style',`color:${hex}`)
+        setColor(hex)
+      }
+    }
+    try{
+      const range=saved.range.cloneRange()
+      const fragment=range.extractContents()
+      wrapper.appendChild(fragment)
+      range.insertNode(wrapper)
+      const selection=window.getSelection()
+      selection?.removeAllRanges()
+      const next=document.createRange()
+      next.selectNodeContents(wrapper)
+      selection?.addRange(next)
+      savedSelection.current={blockId:saved.blockId,range:next.cloneRange()}
+      setActiveBlock(saved.blockId)
+      syncEditor(saved.blockId)
+      setNotice(kind==='color'?`Applied ${normalizeHex(color)} to the selection.`:'Formatting applied to the selection.')
+    }catch{
+      setNotice('That selection could not be formatted. Try selecting text within a single paragraph.')
+    }
+  }
+  const preserveSelection=(e:MouseEvent)=>e.preventDefault()
+
+  const isDuplicate=(bid:string,url:string)=>blocks.some(b=>b.id!==bid&&b.type==='image'&&b.url===url)
+  async function parseInto(bid:string,url:string){
+    if(isDuplicate(bid,url)){setNotice('Duplicate image blocked: this URL already exists in the article.');return}
+    setNotice('Parsing source…')
+    try{
+      const r=await fetch('/api/parse-link',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url})})
+      const m=await r.json()
+      if(!r.ok) throw new Error(m.error)
+      const image=m.image||url
+      if(isDuplicate(bid,image)){setNotice('Duplicate image blocked after link parsing.');return}
+      patch(bid,{url:image,author:m.author||'',source:m.site||m.source||new URL(url).hostname,caption:m.title||''})
+      setNotice('Source metadata parsed. Review attribution before publishing.')
+    }catch(e){setNotice(e instanceof Error?e.message:'Parse failed')}
+  }
   async function upload(bid:string,file:File){
     const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(x=>x.toString(16).padStart(2,'0')).join('')
     if(blocks.some(b=>b.id!==bid&&b.fingerprint===digest)){setNotice('Duplicate upload blocked: the same file is already in this article.');return}
@@ -24,38 +254,231 @@ export function StudioEditor(){
     if(supabase){
       const {data:{user}}=await supabase.auth.getUser()
       if(user){
-        const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'-'); const path=`${user.id}/${Date.now()}-${safe}`
+        const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,'-')
+        const path=`${user.id}/${Date.now()}-${safe}`
         const {error}=await supabase.storage.from('media').upload(path,file,{upsert:false,contentType:file.type})
-        if(!error){const {data}=supabase.storage.from('media').getPublicUrl(path); patch(bid,{url:data.publicUrl,caption:file.name,source:`${BRAND_NAME} upload`,fingerprint:digest}); setNotice('Image uploaded to Supabase Storage.'); return}
+        if(!error){
+          const {data}=supabase.storage.from('media').getPublicUrl(path)
+          patch(bid,{url:data.publicUrl,caption:file.name,source:`${BRAND_NAME} upload`,fingerprint:digest})
+          setNotice('Image uploaded to Supabase Storage.')
+          return
+        }
         setNotice(`Upload failed: ${error.message}. Showing a local preview instead.`)
       }
     }
-    const u=URL.createObjectURL(file); patch(bid,{url:u,caption:file.name,source:'Local preview',fingerprint:digest}); setNotice('Local preview inserted. Sign in and connect Supabase Storage for persistent uploads.')
+    const u=URL.createObjectURL(file)
+    patch(bid,{url:u,caption:file.name,source:'Local preview',fingerprint:digest})
+    setNotice('Local preview inserted. Sign in and connect Supabase Storage for persistent uploads.')
   }
+
+  async function resolveCategory(supabase:NonNullable<ReturnType<typeof createSupabaseBrowserClient>>){
+    const name=category.trim()
+    if(!name) return null
+    const {data:found,error:findError}=await supabase.from('categories').select('id').ilike('name',name).limit(1).maybeSingle()
+    if(findError) throw findError
+    if(found?.id) return found.id
+    const slug=name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').slice(0,60)||`category-${Date.now()}`
+    const {data:created,error:createError}=await supabase.from('categories').insert({name,slug}).select('id').single()
+    if(createError) throw createError
+    return created.id
+  }
+
+  function publishRows(idValue:string){
+    return blocks.map((b,position)=>{
+      if(b.type==='paragraph'){
+        const editor=editors.current[b.id]
+        const html=sanitizeRichHtml(editor?.innerHTML??b.html??escapeHtml(b.text||''))
+        return {article_id:idValue,position,block_type:'paragraph',content:{html,text:textFromHtml(html)}}
+      }
+      return {article_id:idValue,position,block_type:'image',content:{url:b.url||'',caption:b.caption||'',original_author:b.author||'',source:b.source||'',fingerprint:b.fingerprint||''}}
+    })
+  }
+
   async function publish(){
-    const supabase=createSupabaseBrowserClient(); if(!supabase){setNotice('Add Supabase URL and publishable key before publishing.');return}
-    const {data:{user},error:userError}=await supabase.auth.getUser(); if(userError||!user){setNotice('Sign in before publishing.');return}
+    const supabase=createSupabaseBrowserClient()
+    if(!supabase){setNotice('Publishing needs Supabase URL and publishable key. Preview and local drafting still work.');return}
+    const {data:{user},error:userError}=await supabase.auth.getUser()
+    if(userError||!user){setNotice('Sign in before publishing.');return}
     if(!title.trim()||!author.trim()){setNotice('Title and author are required.');return}
-    const slugBase=title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').slice(0,70)||'essay'
-    const {data:cat}=await supabase.from('categories').select('id').eq('name',category).maybeSingle()
-    const slug=`${slugBase}-${Date.now().toString().slice(-6)}`
-    const {data:article,error}=await supabase.from('articles').insert({slug,title,author_name:author,category_id:cat?.id??null,cover_url:cover||null,status:'published',published_on:date,tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}).select('id').single()
-    if(error||!article){setNotice(`Publish failed: ${error?.message||'Could not create article'}`);return}
-    const rows=blocks.map((b,position)=>({article_id:article.id,position,block_type:b.type,content:b.type==='paragraph'?{text:b.text||''}:{url:b.url||'',caption:b.caption||'',original_author:b.author||'',source:b.source||'',fingerprint:b.fingerprint||''}}))
-    const {error:blockError}=await supabase.from('article_blocks').insert(rows)
-    if(blockError){await supabase.from('articles').delete().eq('id',article.id); setNotice(`Publish rolled back: ${blockError.message}`);return}
-    setNotice(`Published as ${slug}.`)
+    setNotice(articleId?'Updating published article…':'Publishing…')
+    try{
+      const categoryId=await resolveCategory(supabase)
+      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,cover_url:cover.trim()||null,status:'published' as const,published_on:date,tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
+      let idValue=articleId
+      let slugValue=articleSlug
+      if(idValue){
+        const {data:updated,error:updateError}=await supabase.from('articles').update(articleValues).eq('id',idValue).select('id,slug').maybeSingle()
+        if(updateError) throw updateError
+        if(!updated){idValue=null;slugValue=null}
+      }
+      if(!idValue){
+        const slugBase=title.toLowerCase().normalize('NFKD').replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').slice(0,70)||'essay'
+        slugValue=`${slugBase}-${Date.now().toString().slice(-6)}`
+        const {data:article,error}=await supabase.from('articles').insert({...articleValues,slug:slugValue}).select('id,slug').single()
+        if(error||!article) throw error||new Error('Could not create article')
+        idValue=article.id
+        slugValue=article.slug
+      }else{
+        const {error:deleteBlocksError}=await supabase.from('article_blocks').delete().eq('article_id',idValue)
+        if(deleteBlocksErrorr) throw deleteBlocksError
+      }
+      if(!idValue) throw new Error('Could not resolve the article id')
+      const rows=publishRows(idValue)
+      const {error:blockError}=await supabase.from('article_blocks').insert(rows)
+      if(blockError) throw blockError
+      setArticleId(idValue)
+      setArticleSlug(slugValue)
+      setArticleStatus('published')
+      setNotice(`Published as ${slugValue}.`)
+    }catch(e:any){
+      const msg=e?.message||'Publishing failed.'
+      setNotice(`Publish failed: ${msg}`)
+    }
   }
-  return <div className="studio-shell"><aside><div className="studio-logo">Γ</div><b><BrandName /> Studio</b><p>Modular article editor</p><a href="/">← Public site</a></aside><section className="studio-main">
-    <div className="studio-top"><div><small>ARTICLE</small><h1>{title||'Untitled draft'}</h1></div><div><button onClick={()=>setNotice('Draft saved locally.')}>Save draft</button><button className="primary" onClick={publish}>Publish</button></div></div>
-    <div className="notice">{notice}</div>
-    <div className="field-grid"><label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label><label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label><label>Category<select value={category} onChange={e=>setCategory(e.target.value)}>{['Philosophy','Nature','Human rights','Environment','Society','History','Politics'].map(x=><option key={x}>{x}</option>)}</select></label><label>Tags<input value={tags} onChange={e=>setTags(e.target.value)} placeholder="world, memory, river"/></label><label className="full">Cover<input value={cover} onChange={e=>setCover(e.target.value)} placeholder="Paste image URL or upload in media block"/></label></div>
-    <div className="blocks"><div className="blocks-head"><h2>Body</h2><p>Paragraphs collapse after editing. Insert controls stay beside the current block.</p></div>{blocks.map((b,i)=><div className={`block ${b.collapsed?'collapsed':''}`} key={b.id}>
-      <div className="block-index">{String(i+1).padStart(2,'0')}</div>
-      <div className="block-content">{b.type==='paragraph'?<><textarea value={b.text||''} onFocus={()=>patch(b.id,{collapsed:false})} onBlur={()=>b.text&&patch(b.id,{collapsed:true})} onChange={e=>patch(b.id,{text:e.target.value})} placeholder="Write a paragraph…"/><button className="fold" onClick={()=>patch(b.id,{collapsed:!b.collapsed})}>{b.collapsed?'Expand':'Fold'}</button></>:<div className="image-block"><input value={b.url||''} onChange={e=>patch(b.id,{url:e.target.value})} placeholder="Image or source URL"/><div className="image-actions"><button onClick={()=>b.url&&parseInto(b.id,b.url)}>Parse link</button><button onClick={()=>{setTarget(b.id);fileRef.current?.click()}}>Upload</button></div>{b.url&&<div className="media-preview"><div>IMAGE PREVIEW</div><small>{b.url}</small></div>}<input value={b.caption||''} onChange={e=>patch(b.id,{caption:e.target.value})} placeholder="Caption"/><div className="split"><input value={b.author||''} onChange={e=>patch(b.id,{author:e.target.value})} placeholder="Original author"/><input value={b.source||''} onChange={e=>patch(b.id,{source:e.target.value})} placeholder="Source"/></div></div>}</div>
-      <div className="insert-rail"><button onClick={()=>addAfter(b.id,'paragraph')}>+ Text</button><button onClick={()=>addAfter(b.id,'image')}>+ Image</button></div>
-    </div>)}</div>
-    <input ref={fileRef} hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0]; if(f&&target) upload(target,f); e.currentTarget.value=''}}/>
-    <label className="date-field">Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/><small>Date stays at the end of the editing flow and at the end of the published article.</small></label>
-  </section></div>
+
+  function saveDraft(){
+    blocks.filter(b=>b.type==='paragraph').forEach(b=>syncEditor(b.id))
+    localStorage.setItem('ganymai-draft',JSON.stringify(snapshot()))
+    setNotice('Draft saved locally.')
+  }
+  async function deleteArticle(){
+    localStorage.setItem('ganymai-trash',JSON.stringify(snapshot()))
+    if(articleId){
+      const supabase=createSupabaseBrowserClient()
+      if(supabase){
+        const {error}=await supabase.from('articles').update({status:'archived'}).eq('id',articleId)
+        if(!error){setArticleStatus('archived');setNotice('Article removed from publication and moved to archive. Use Restore to republish it.');return}
+        setNotice(`Archive failed: ${error.message}. A local recovery copy was still saved.`)
+        retur
+      }
+    }
+    resetDraft()
+    localStorage.removeItem('ganymai-draft')
+    setNotice('Draft deleted locally. Use Restore to bring it back.')
+  }
+  async function restoreArticle(){
+    if(articleId&&articleStatus==='archived'){
+      const supabase=createSupabaseBrowserClient()
+      if(supabase){
+        const {error}=await supabase.from('articles').update({status:'published'}).eq('id',articleId)
+        if(!error){setArticleStatus('published');setNotice('Article restored to published status.');return}
+        setNotice(`Restore failed: ${error.message}`)
+        return
+      }
+    }
+    const trash=localStorage.getItem('ganymai-trash')
+    if(!trash){setNotice('There is no deleted draft to restore.');return}
+    try{
+      const parsed=JSON.parse(trash)
+      loadDraft({...parsed,blocks:normalizeBlocks(parsed.blocks)})
+      setNotice('Deleted draft restored.')
+    }catch{setNotice('The recovery copy could not be read.')}
+  }
+
+  return <div className="studio-shell">
+    <aside>
+      <div className="studio-logo">Γ</div>
+      <b><BrandName /> Studio</b>
+      <p>Article editor</p>
+      <div className="studio-status"><span>Status</span><strong>{articleStatus}</strong></div>
+      <a href="/">← Public site</a>
+    </aside>
+
+    <section className="studio-main">
+      <div className="studio-top">
+        <div><small>ARTICLE</small><h1>{title||'Untitled draft'}</h1></div>
+        <div className="studio-actions">
+          <button onClick={saveDraft}>Save</button>
+          <button onClick={()=>setPreview(true)}>Preview</button>
+          <button className="danger" onClick={deleteArticle}>Delete</button>
+          <button onClick={restoreArticle}>Restore</button>
+          <button className="primary" onClick={publish}>Publish</button>
+        </div>
+      </div>
+
+      <div className="notice">{notice}</div>
+
+      <div className="field-grid">
+        <label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label>
+        <label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label>
+        <label>Category<input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Type any category"/></label>
+        <label>Tags<input value={tags} onChange={e=>setTags(e.target.value)} placeholder="world, memory, river"/></label>
+        <label className="full">Cover<input value={cover} onChange={e=>setCover(e.target.value)} placeholder="Cover image URL"/></label>
+      </div>
+
+      <div className="blocks">
+        <div className="blocks-head">
+          <div><h2>Body</h2><p>Five paragraph boxes by default. Add or remove sections freely.</p></div>
+          <div className="body-actions"><button onClick={addParagraph}>+ Paragraph</button>{removed&&<button onClick={undoRemove}>Undo remove</button>}</div>
+        </div>
+
+        <div className="rich-toolbar" aria-label="Text formatting toolbar">
+          <span>{activeBlock?'Selection active':'Select text to format'}</span>
+          <button onMouseDown={preserveSelection} onClick={()=>applyWrap('bold')}><b>B</b></button>
+          <button onMouseDown={preserveSelection} onClick={()=>applyWrap('large')}>A+</button>
+          <button onMouseDown={preserveSelection} onClick={()=>applyWrap('larger')}>A++</button>
+          <div className="color-tool">
+            <span className="color-dot" style={{background:normalizeHex(color)||'#702691'}}/>
+            <input value={color} onChange={e=>setColor(e.target.value)} placeholder="#702691" aria-label="HEX text colour"/>
+            <button onMouseDown={preserveSelection} onClick={()=>applyWrap('color')}>Apply color</button>
+          </div>
+        </div>
+
+        {blocks.map((b,i)=><div className="block studio-block" key={b.id}>
+          <div className="block-index">{String(i+1).padStart(2,'0')}</div>
+          <div className="block-content">
+            {b.type==='paragraph'
+              ?<div
+                ref={node=>{editors.current[b.id]=node}}
+                className="rich-editor"
+                data-rich-block={b.id}
+                contentEditable
+                suppressContentEditableWarning
+                dangerouslySetInnerHTML={{__html:b.html??escapeHtml(b.text||'')}}
+                onFocus={()=>setActiveBlock(b.id)}
+                onInput={e=>patch(b.id,{html:e.currentTarget.innerHTML,text:e.currentTarget.innerText})}
+                onBlur={e=>{
+                  const clean=sanitizeRichHtml(e.currentTarget.innerHTML)
+                  if(clean!==e.currentTarget.innerHTML)e.currentTarget.innerHTML=clean
+                  patch(b.id,{html:clean,text:e.currentTarget.innerText})
+                }}
+                data-placeholder={`Paragraph ${i+1}…`}
+              />
+              :<div className="image-block">
+                <input value={b.url||''} onChange={e=>patch(b.id,{url:e.target.value})} placeholder="Image or source URL"/>
+                <div className="image-actions"><button onClick={()=>b.url&&parseInto(b.id,b.url)}>Parse link</button><button onClick={()=>{setTarget(b.id);fileRef.current?.click()}}>Upload</button></div>
+                {b.url&&<div className="media-preview"><div>IMAGE PREVIEW</div><small>{b.url}</small></div>}
+                <input value={b.caption||''} onChange={e=>patch(b.id,{caption:e.target.value})} placeholder="Caption"/>
+                <div className="split"><input value={b.author||''} onChange={e=>patch(b.id,{author:e.target.value})} placeholder="Original author"/><input value={b.source||''} onChange={e=>patch(b.id,{source:e.target.value})} placeholder="Source"/></div>
+              </div>}
+          </div>
+          <div className="insert-rail">
+            <button onClick={()=>addAfter(b.id,'paragraph')}>+ Text</button>
+            <button onClick={()=>addAfter(b.id,'image')}>+ Image</button>
+            <button className="remove-block" onClick={()=>removeBlock(b.id)}>− Remove</button>
+          </div>
+        </div>)}
+      </div>
+
+      <input ref={fileRef} hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files?.[0];if(f&&target)upload(target,f);e.currentTarget.value=''}}/>
+      <label className="date-field">Date<input type="date" value={date} onChange={e=>setDate(e.target.value)}/><small>Date remains at the end of the editing flow and published article.</small></label>
+    </section>
+
+    {preview&&<div className="studio-preview-backdrop" role="dialog" aria-modal="true" aria-label="Article preview" onMouseDown={e=>{if(e.currentTarget===e.target)setPreview(false)}}>
+      <article className="studio-preview">
+        <div className="preview-top"><span>PREVIEW</span><button onClick={()=>setPreview(false)}>Close ×</button></div>
+        <header>
+          {category&&<div className="preview-category">{category}</div>}
+          <h1>{title||'Untitled draft'}</h1>
+          <p>{author||'Author'} · {date}</p>
+        </header>
+        {cover&&<div className="preview-cover" style={{backgroundImage:`url("${cover.replace(/"/g,'\\"')}")`}}/>}
+        <div className="preview-body">
+          {blocks.map(b=>b.type==='paragraph'
+            ?<div className="preview-paragraph" key={b.id} dangerouslySetInnerHTML={{__html:sanitizeRichHtml(editors.current[b.id]?.innerHTML??b.html??escapeHtml(b.text||''))}}/>
+            :<figure className="preview-image" key={b.id}><div className="preview-image-box">{b.url||'Image'}</div>{b.caption&&<figcaption>{b.caption}</figcaption>}</figure>)}
+        </div>
+      </article>
+    </div>}
+  </div>
 }

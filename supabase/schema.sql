@@ -89,12 +89,15 @@ alter table public.media enable row level security;
 alter table public.subscribers enable row level security;
 
 grant select on public.authors, public.categories, public.tags, public.articles, public.article_blocks, public.media to anon, authenticated;
+grant insert on public.categories to authenticated;
 grant insert, update, delete on public.articles, public.article_blocks, public.media to authenticated;
 grant insert on public.subscribers to anon, authenticated;
 
 create policy "profiles read self" on public.profiles for select to authenticated using(id=(select auth.uid()));
 create policy "public reference authors" on public.authors for select to anon, authenticated using(true);
 create policy "public reference categories" on public.categories for select to anon, authenticated using(true);
+create policy "writers create categories" on public.categories for insert to authenticated
+with check(length(name) between 1 and 80 and length(slug) between 1 and 80);
 create policy "public reference tags" on public.tags for select to anon, authenticated using(true);
 
 create policy "published articles public" on public.articles for select to anon, authenticated
