@@ -87,8 +87,12 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
             <span>{t.theme}</span><b>{dark?t.dark:t.light}</b>
           </button>
           <div className="social" aria-label="Social links">
-            <a className="social-icon facebook-icon" href="https://facebook.com" aria-label="Facebook"><span aria-hidden="true">f</span></a>
-            <a className="social-icon x-icon" href="https://x.com" aria-label="X"><span aria-hidden="true">X</span></a>
+            <a className="social-icon" href="https://facebook.com" aria-label="Facebook">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.4 21v-8h2.8l.42-3.12H13.4V7.9c0-.9.27-1.52 1.63-1.52h1.74V3.6c-.3-.04-1.33-.12-2.53-.12-2.5 0-4.22 1.46-4.22 4.15v2.25H7.2V13h2.82v8h3.38Z"/></svg>
+            </a>
+            <a className="social-icon" href="https://x.com" aria-label="X">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5 18.7 20M18.7 4.5 5 20"/></svg>
+            </a>
           </div>
         </div>
       </aside>
@@ -100,7 +104,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
       <p className="footer-motto">{t.motto}</p>
       <nav className="footer-links" aria-label="Footer">
         <Link href="/about">{t.aboutUs}</Link>
-        <Link href="/vision">{t.ourVision}</Link>
         <Link href="/archive">{t.ourArchive}</Link>
         <Link href="/commenting-principles">{t.commentingPrinciples}</Link>
         <Link href="/privacy">{t.privacyPolicy}</Link>
