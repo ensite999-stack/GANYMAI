@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect,useRef,useState,type MouseEvent} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import {createSupabaseBrowserClient} from '@/lib/supabase'
 import {BRAND_NAME} from '@/lib/brand'
 import {BrandName} from '@/components/BrandName'
@@ -231,7 +231,7 @@ export function StudioEditor(){
       setNotice('That selection could not be formatted. Try selecting text within a single paragraph.')
     }
   }
-  const preserveSelection=(e:MouseEvent)=>e.preventDefault()
+  const preserveSelection=(e:any)=>e.preventDefault()
 
   const isDuplicate=(bid:string,url:string)=>blocks.some(b=>b.id!==bid&&b.type==='image'&&b.url===url)
   async function parseInto(bid:string,url:string){
@@ -271,7 +271,7 @@ export function StudioEditor(){
     setNotice('Local preview inserted. Sign in and connect Supabase Storage for persistent uploads.')
   }
 
-  async function resolveCategory(supabase:NonNullable<ReturnType<typeof createSupabaseBrowserClient>>){
+  async function resolveCategory(supabase:any){
     const name=category.trim()
     if(!name) return null
     const {data:found,error:findError}=await supabase.from('categories').select('id').ilike('name',name).limit(1).maybeSingle()
