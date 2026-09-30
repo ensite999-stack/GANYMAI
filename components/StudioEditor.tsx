@@ -330,7 +330,7 @@ export function StudioEditor(){
       setArticleId(idValue)
       setArticleSlug(slugValue)
       setArticleStatus('published')
-      setNotice(`Published as ${slugValue}.`)
+      setNotice(`Published. Public URL: /essay/${slugValue}`)
     }catch(e:any){
       const msg=e?.message||'Publishing failed.'
       setNotice(`Publish failed: ${msg}`)

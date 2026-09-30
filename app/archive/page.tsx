@@ -1,7 +1,34 @@
-export default function Archive(){
+import Link from 'next/link'
+import { createPublicContentClient, type PublicArticle } from '@/lib/publicContent'
+
+export const dynamic='force-dynamic'
+
+export default async function Archive(){
+  const supabase=createPublicContentClient()
+  let articles:PublicArticle[]=[]
+  if(supabase){
+    const {data}=await supabase
+      .from('articles')
+      .select('id,slug,title,author_name,category_id,tags,cover_url,published_on')
+      .eq('status','published')
+      .order('published_on',{ascending:false})
+      .order('created_at',{ascending:false})
+    articles=(data||[]) as PublicArticle[]
+  }
+
   return <section className="text-page archive-page">
     <div className="eyebrow">ARCHIVE</div>
     <h1>Essays</h1>
-    <p className="empty-state">No essays have been published yet.</p>
+    {!articles.length
+      ?<p className="empty-state">No essays have been published yet.</p>
+      :<div className="published-archive">
+        {articles.map(article=><article className="archive-item" key={article.id}>
+          <div className="archive-date">{article.published_on||'—'}</div>
+          <div>
+            <h2><Link href={`/essay/${article.slug}`}>{article.title}</Link></h2>
+            <p>By {article.author_name}</p>
+          </div>
+        </article>)}
+      </div>}
   </section>
 }
