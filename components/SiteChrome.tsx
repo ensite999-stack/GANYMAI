@@ -101,7 +101,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
       <nav className="footer-links" aria-label="Footer">
         <Link href="/about">{t.aboutUs}</Link>
         <Link href="/archive">{t.ourArchive}</Link>
-        <Link href="/commenting-principles">{t.commentingPrinciples}</Link>
         <Link href="/privacy">{t.privacyPolicy}</Link>
         <Link href="/terms">{t.termsOfUse}</Link>
         <Link href="/accessibility">{t.accessibilityStatement}</Link>
