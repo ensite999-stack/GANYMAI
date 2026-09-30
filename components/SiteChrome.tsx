@@ -55,13 +55,13 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
   if(pathname.startsWith('/studio')) return <>{children}</>
 
   return <>
-    <header className={`topbar ${solid?'solid':''} ${visible?'show':'hide'}`}>
+    <header className={`topbar ${solid?'solid':''} ${visible?'show':'hide'} ${menuMounted?'menu-active':''}`}>
       <button className="logo" aria-label="Go back" onClick={()=>history.length>1?history.back():(location.href='/')}><BrandMark className="brand-mark" /></button>
       <div className="top-actions">
         <button className="search-button" onClick={()=>setSearch(v=>!v)}>{t.search}</button>
         <Link className="desktop-only top-link" href="/subscribe">{t.subscribe}</Link>
         <Link className="desktop-only top-link" href="/archive">{t.archive}</Link>
-        <button className="menu-button" aria-label={t.menu} aria-expanded={menuMounted} onClick={openMenu}><i/><i/><i/></button>
+        <button className="menu-button" aria-label={menuMounted?t.closeMenu:t.menu} aria-expanded={menuOpen} onClick={menuMounted?closeMenu:openMenu}><i/><i/><i/></button>
       </div>
       {search && <div className="search-panel"><input autoFocus placeholder={`${t.search}…`} /><button onClick={()=>setSearch(false)}>×</button></div>}
     </header>
@@ -69,10 +69,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     {menuMounted && <div className={`menu-layer ${menuOpen?'open':''}`}>
       <button className="menu-backdrop" aria-label={t.closeMenu} onClick={closeMenu}/>
       <aside className="menu-drawer" role="dialog" aria-modal="true" aria-label={t.menu}>
-        <div className="menu-head">
-          <strong><BrandName /></strong>
-          <button className="drawer-close" aria-label={t.closeMenu} onClick={closeMenu}><i/><i/><i/></button>
-        </div>
         <nav className="menu-links">
           <Link onClick={closeMenu} href="/about">{t.about}</Link>
           <Link onClick={closeMenu} href="/">{t.essays}</Link>
@@ -88,10 +84,10 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
           </button>
           <div className="social" aria-label="Social links">
             <a className="social-icon" href="https://facebook.com" aria-label="Facebook">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.4 21v-8h2.8l.42-3.12H13.4V7.9c0-.9.27-1.52 1.63-1.52h1.74V3.6c-.3-.04-1.33-.12-2.53-.12-2.5 0-4.22 1.46-4.22 4.15v2.25H7.2V13h2.82v8h3.38Z"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 8H16V5h-2.5C10.5 5 9 6.8 9 9.4V11H7v3h2v6h3v-6h3l.5-3H12V9.5c0-1 .4-1.5 1.5-1.5Z"/></svg>
             </a>
             <a className="social-icon" href="https://x.com" aria-label="X">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5 18.7 20M18.7 4.5 5 20"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
             </a>
           </div>
         </div>
