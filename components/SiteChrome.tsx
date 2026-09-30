@@ -49,7 +49,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
   }
   function closeMenu(){
     setMenuOpen(false)
-    window.setTimeout(()=>setMenuMounted(false),280)
+    window.setTimeout(()=>setMenuMounted(false),320)
   }
 
   if(pathname.startsWith('/studio')) return <>{children}</>
@@ -61,7 +61,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
         <button className="search-button" onClick={()=>setSearch(v=>!v)}>{t.search}</button>
         <Link className="desktop-only top-link" href="/subscribe">{t.subscribe}</Link>
         <Link className="desktop-only top-link" href="/archive">{t.archive}</Link>
-        <button className="menu-button" aria-label={t.menu} onClick={openMenu}><i/><i/><i/></button>
+        <button className="menu-button" aria-label={t.menu} aria-expanded={menuMounted} onClick={openMenu}><i/><i/><i/></button>
       </div>
       {search && <div className="search-panel"><input autoFocus placeholder={`${t.search}…`} /><button onClick={()=>setSearch(false)}>×</button></div>}
     </header>
@@ -69,7 +69,10 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
     {menuMounted && <div className={`menu-layer ${menuOpen?'open':''}`}>
       <button className="menu-backdrop" aria-label={t.closeMenu} onClick={closeMenu}/>
       <aside className="menu-drawer" role="dialog" aria-modal="true" aria-label={t.menu}>
-        <div className="menu-head"><strong><BrandName /></strong><button aria-label={t.closeMenu} onClick={closeMenu}>×</button></div>
+        <div className="menu-head">
+          <strong><BrandName /></strong>
+          <button className="drawer-close" aria-label={t.closeMenu} onClick={closeMenu}><i/><i/><i/></button>
+        </div>
         <nav className="menu-links">
           <Link onClick={closeMenu} href="/about">{t.about}</Link>
           <Link onClick={closeMenu} href="/">{t.essays}</Link>
@@ -83,7 +86,10 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
           <button className="setting-button" onClick={()=>setDark(v=>!v)}>
             <span>{t.theme}</span><b>{dark?t.dark:t.light}</b>
           </button>
-          <div className="social"><a href="https://facebook.com">Facebook</a><a href="https://x.com">X</a></div>
+          <div className="social" aria-label="Social links">
+            <a className="social-icon facebook-icon" href="https://facebook.com" aria-label="Facebook"><span aria-hidden="true">f</span></a>
+            <a className="social-icon x-icon" href="https://x.com" aria-label="X"><span aria-hidden="true">X</span></a>
+          </div>
         </div>
       </aside>
     </div>}
@@ -101,10 +107,7 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
         <Link href="/terms">{t.termsOfUse}</Link>
         <Link href="/accessibility">{t.accessibilityStatement}</Link>
         <Link href="/donation-statement">{t.donationStatement}</Link>
-        <div className="footer-contact">
-          <Link href="/contact">{t.contactUs}</Link>
-          <a href="mailto:hello@Ganymai.com">hello@Ganymai.com</a>
-        </div>
+        <Link href="/contact">{t.contactUs}</Link>
       </nav>
       <p className="footer-copyright">© <span suppressHydrationWarning>{currentYear}</span> <BrandName /></p>
     </footer>
