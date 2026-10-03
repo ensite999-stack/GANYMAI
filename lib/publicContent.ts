@@ -7,6 +7,7 @@ export type PublicArticle = {
   author_name:string
   category_id:number|null
   label_text:string|null
+  label_icon:'bookmark'|'book'|'document'|'eye'|'leaf'
   tags:string[]
   cover_url:string|null
   published_on:string|null
@@ -15,6 +16,7 @@ export type PublicArticle = {
 
 export type PublicBlock = {
   id:string
+  article_id?:string
   position:number
   block_type:string
   content:Record<string,unknown>

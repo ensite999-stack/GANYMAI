@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArticleLabel } from '@/components/ArticleLabel'
 import { ArticleShare } from '@/components/ArticleShare'
 import { BRAND_NAME } from '@/lib/brand'
 import { createPublicContentClient, sanitizePublishedHtml, type PublicBlock } from '@/lib/publicContent'
@@ -81,7 +80,6 @@ export default async function Essay({params}:{params:Promise<{slug:string}>}){
       :Promise.resolve({data:null})
   ])
 
-  const label=article.label_text?.trim()||(category?.name?`Essay / ${category.name}`:'Essay')
   const url=`${SITE_URL}/essay/${article.slug}`
   const articleJsonLd={
     '@context':'https://schema.org',
@@ -101,7 +99,6 @@ export default async function Essay({params}:{params:Promise<{slug:string}>}){
     <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(articleJsonLd)}}/>
 
     <header className="essay-head">
-      <ArticleLabel>{label}</ArticleLabel>
       <h1>{article.title}</h1>
       <p className="byline">By {article.author_name}</p>
       <ArticleShare title={article.title} url={url}/>

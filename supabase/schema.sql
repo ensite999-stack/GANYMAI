@@ -37,6 +37,7 @@ create table public.articles (
   author_id uuid references public.authors(id),
   category_id bigint references public.categories(id),
   label_text text,
+  label_icon text not null default 'bookmark' check(label_icon in ('bookmark','book','document','eye','leaf')),
   tags text[] not null default '{}',
   cover_url text,
   status public.article_status not null default 'draft',

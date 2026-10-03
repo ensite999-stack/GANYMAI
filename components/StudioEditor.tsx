@@ -23,6 +23,7 @@ type Draft={
   author:string
   category:string
   label:string
+  icon:'bookmark'|'book'|'document'|'eye'|'leaf'
   tags:string
   cover:string
   date:string
@@ -35,7 +36,7 @@ type SavedSelection={blockId:string;range:Range}
 
 const uid=()=>typeof crypto!=='undefined'&&'randomUUID' in crypto?crypto.randomUUID():`b-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const fiveParagraphs=():Block[]=>Array.from({length:5},(_,i)=>({id:`paragraph-${i+1}`,type:'paragraph',html:'',text:''}))
-const emptyDraft=():Draft=>({title:'',author:'',category:'',label:'Essay',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
+const emptyDraft=():Draft=>({title:'',author:'',category:'',label:'Essay',icon:'bookmark',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
 
 function escapeHtml(value:string){
   return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -90,6 +91,7 @@ export function StudioEditor(){
   const [author,setAuthor]=useState(initial.author)
   const [category,setCategory]=useState(initial.category)
   const [articleLabel,setArticleLabel]=useState(initial.label)
+  const [labelIcon,setLabelIcon]=useState<Draft['icon']>(initial.icon)
   const [tags,setTags]=useState(initial.tags)
   const [cover,setCover]=useState(initial.cover)
   const [date,setDate]=useState(initial.date)
@@ -116,6 +118,7 @@ export function StudioEditor(){
       setAuthor(x.author||'')
       setCategory(x.category||'')
       setArticleLabel(x.label||'Essay')
+      setLabelIcon(['bookmark','book','document','eye','leaf'].includes(x.icon)?x.icon:'bookmark')
       setTags(x.tags||'')
       setCover(x.cover||'')
       setDate(x.date||initial.date)
@@ -143,17 +146,18 @@ export function StudioEditor(){
     return()=>document.removeEventListener('selectionchange',capture)
   },[])
 
-  const snapshot=():Draft=>({title,author,category,label:articleLabel,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
+  const snapshot=():Draft=>({title,author,category,label:articleLabel,icon:labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
   useEffect(()=>{
     const t=setTimeout(()=>localStorage.setItem('ganymai-draft',JSON.stringify(snapshot())),250)
     return()=>clearTimeout(t)
-  },[title,author,category,articleLabel,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
+  },[title,author,category,articleLabel,labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
 
   function loadDraft(d:Draft){
     setTitle(d.title||'')
     setAuthor(d.author||'')
     setCategory(d.category||'')
     setArticleLabel(d.label||'Essay')
+    setLabelIcon(d.icon||'bookmark')
     setTags(d.tags||'')
     setCover(d.cover||'')
     setDate(d.date||new Date().toISOString().slice(0,10))
@@ -309,7 +313,7 @@ export function StudioEditor(){
     setNotice(articleId?'Updating published article…':'Publishing…')
     try{
       const categoryId=await resolveCategory(supabase)
-      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,label_text:articleLabel.trim()||null,cover_url:cover.trim()||null,status:'published' as const,published_on:date,updated_at:new Date().toISOString(),tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
+      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,label_text:articleLabel.trim()||null,label_icon:labelIcon,cover_url:cover.trim()||null,status:'published' as const,published_on:date,updated_at:new Date().toISOString(),tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
       let idValue=articleId
       let slugValue=articleSlug
       if(idValue){
@@ -408,7 +412,9 @@ export function StudioEditor(){
         <label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label>
         <label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label>
         <label>Category<input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Type any category"/></label>
-        <label>Article label<input value={articleLabel} onChange={e=>setArticleLabel(e.target.value)} placeholder="Essay / Human rights and justice" maxLength={120}/></label>
+        <label>Homepage label<input value={articleLabel} onChange={e=>setArticleLabel(e.target.value)} placeholder="Essay / Human rights and justice" maxLength={120}/></label>
+        <label>Homepage icon<select value={labelIcon} onChange={e=>setLabelIcon(e.target.value as Draft['icon'])}><option value="bookmark">Bookmark</option><option value="book">Book</option><option value="document">Document</option><option value="eye">Eye</option><option value="leaf">Leaf</option></select></label>
+        <div className="homepage-label-preview"><small>HOME CARD PREVIEW</small><ArticleLabel icon={labelIcon}>{articleLabel.trim()||'Essay'}</ArticleLabel></div>
         <label>Tags<input value={tags} onChange={e=>setTags(e.target.value)} placeholder="world, memory, river"/></label>
         <label className="full">Cover<input value={cover} onChange={e=>setCover(e.target.value)} placeholder="Cover image URL"/></label>
       </div>
@@ -475,7 +481,6 @@ export function StudioEditor(){
       <article className="studio-preview">
         <div className="preview-top"><span>PREVIEW</span><button onClick={()=>setPreview(false)}>Close ×</button></div>
         <header>
-          <ArticleLabel className="preview-article-label">{articleLabel.trim()||(category.trim()?`Essay / ${category.trim()}`:'Essay')}</ArticleLabel>
           <h1>{title||'Untitled draft'}</h1>
           <p>{author||'Author'} · {date}</p>
         </header>
