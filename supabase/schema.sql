@@ -36,6 +36,7 @@ create table public.articles (
   author_name text not null,
   author_id uuid references public.authors(id),
   category_id bigint references public.categories(id),
+  label_text text,
   tags text[] not null default '{}',
   cover_url text,
   status public.article_status not null default 'draft',

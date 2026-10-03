@@ -83,9 +83,6 @@ export function SiteChrome({children}:{children:React.ReactNode}) {
             <span>{t.theme}</span><b>{dark?t.dark:t.light}</b>
           </button>
           <div className="social" aria-label="Social links">
-            <a className="social-icon" href="https://facebook.com" aria-label="Facebook">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 8H16V5h-2.5C10.5 5 9 6.8 9 9.4V11H7v3h2v6h3v-6h3l.5-3H12V9.5c0-1 .4-1.5 1.5-1.5Z"/></svg>
-            </a>
             <a className="social-icon" href="https://x.com" aria-label="X">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg>
             </a>

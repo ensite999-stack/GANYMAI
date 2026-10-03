@@ -6,7 +6,7 @@ import { BRAND_NAME } from '@/lib/brand'
 export function BrandTitleGuard() {
   useEffect(()=>{
     const restore=()=>{
-      if(document.title!==BRAND_NAME) document.title=BRAND_NAME
+      if(!document.title.includes(BRAND_NAME)) document.title=BRAND_NAME
     }
     restore()
     const observer=new MutationObserver(restore)

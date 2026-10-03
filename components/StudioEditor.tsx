@@ -5,6 +5,7 @@ import {useEffect,useRef,useState} from 'react'
 import {createSupabaseBrowserClient} from '@/lib/supabase'
 import {BRAND_NAME} from '@/lib/brand'
 import {BrandName} from '@/components/BrandName'
+import {ArticleLabel} from '@/components/ArticleLabel'
 
 type Block={
   id:string
@@ -21,6 +22,7 @@ type Draft={
   title:string
   author:string
   category:string
+  label:string
   tags:string
   cover:string
   date:string
@@ -33,7 +35,7 @@ type SavedSelection={blockId:string;range:Range}
 
 const uid=()=>typeof crypto!=='undefined'&&'randomUUID' in crypto?crypto.randomUUID():`b-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const fiveParagraphs=():Block[]=>Array.from({length:5},(_,i)=>({id:`paragraph-${i+1}`,type:'paragraph',html:'',text:''}))
-const emptyDraft=():Draft=>({title:'',author:'',category:'',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
+const emptyDraft=():Draft=>({title:'',author:'',category:'',label:'Essay',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
 
 function escapeHtml(value:string){
   return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -87,6 +89,7 @@ export function StudioEditor(){
   const [title,setTitle]=useState(initial.title)
   const [author,setAuthor]=useState(initial.author)
   const [category,setCategory]=useState(initial.category)
+  const [articleLabel,setArticleLabel]=useState(initial.label)
   const [tags,setTags]=useState(initial.tags)
   const [cover,setCover]=useState(initial.cover)
   const [date,setDate]=useState(initial.date)
@@ -112,6 +115,7 @@ export function StudioEditor(){
       setTitle(x.title||'')
       setAuthor(x.author||'')
       setCategory(x.category||'')
+      setArticleLabel(x.label||'Essay')
       setTags(x.tags||'')
       setCover(x.cover||'')
       setDate(x.date||initial.date)
@@ -139,16 +143,17 @@ export function StudioEditor(){
     return()=>document.removeEventListener('selectionchange',capture)
   },[])
 
-  const snapshot=():Draft=>({title,author,category,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
+  const snapshot=():Draft=>({title,author,category,label:articleLabel,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
   useEffect(()=>{
     const t=setTimeout(()=>localStorage.setItem('ganymai-draft',JSON.stringify(snapshot())),250)
     return()=>clearTimeout(t)
-  },[title,author,category,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
+  },[title,author,category,articleLabel,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
 
   function loadDraft(d:Draft){
     setTitle(d.title||'')
     setAuthor(d.author||'')
     setCategory(d.category||'')
+    setArticleLabel(d.label||'Essay')
     setTags(d.tags||'')
     setCover(d.cover||'')
     setDate(d.date||new Date().toISOString().slice(0,10))
@@ -304,7 +309,7 @@ export function StudioEditor(){
     setNotice(articleId?'Updating published article…':'Publishing…')
     try{
       const categoryId=await resolveCategory(supabase)
-      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,cover_url:cover.trim()||null,status:'published' as const,published_on:date,tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
+      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,label_text:articleLabel.trim()||null,cover_url:cover.trim()||null,status:'published' as const,published_on:date,updated_at:new Date().toISOString(),tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
       let idValue=articleId
       let slugValue=articleSlug
       if(idValue){
@@ -321,7 +326,7 @@ export function StudioEditor(){
         slugValue=article.slug
       }else{
         const {error:deleteBlocksError}=await supabase.from('article_blocks').delete().eq('article_id',idValue)
-        if(deleteBlocksErrorr) throw deleteBlocksError
+        if(deleteBlocksError) throw deleteBlocksError
       }
       if(!idValue) throw new Error('Could not resolve the article id')
       const rows=publishRows(idValue)
@@ -347,7 +352,7 @@ export function StudioEditor(){
     if(articleId){
       const supabase=createSupabaseBrowserClient()
       if(supabase){
-        const {error}=await supabase.from('articles').update({status:'archived'}).eq('id',articleId)
+        const {error}=await supabase.from('articles').update({status:'archived',updated_at:new Date().toISOString()}).eq('id',articleId)
         if(!error){setArticleStatus('archived');setNotice('Article removed from publication and moved to archive. Use Restore to republish it.');return}
         setNotice(`Archive failed: ${error.message}. A local recovery copy was still saved.`)
         retur
@@ -361,7 +366,7 @@ export function StudioEditor(){
     if(articleId&&articleStatus==='archived'){
       const supabase=createSupabaseBrowserClient()
       if(supabase){
-        const {error}=await supabase.from('articles').update({status:'published'}).eq('id',articleId)
+        const {error}=await supabase.from('articles').update({status:'published',updated_at:new Date().toISOString()}).eq('id',articleId)
         if(!error){setArticleStatus('published');setNotice('Article restored to published status.');return}
         setNotice(`Restore failed: ${error.message}`)
         return
@@ -403,6 +408,7 @@ export function StudioEditor(){
         <label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label>
         <label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label>
         <label>Category<input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Type any category"/></label>
+        <label>Article label<input value={articleLabel} onChange={e=>setArticleLabel(e.target.value)} placeholder="Essay / Human rights and justice" maxLength={120}/></label>
         <label>Tags<input value={tags} onChange={e=>setTags(e.target.value)} placeholder="world, memory, river"/></label>
         <label className="full">Cover<input value={cover} onChange={e=>setCover(e.target.value)} placeholder="Cover image URL"/></label>
       </div>
@@ -469,7 +475,7 @@ export function StudioEditor(){
       <article className="studio-preview">
         <div className="preview-top"><span>PREVIEW</span><button onClick={()=>setPreview(false)}>Close ×</button></div>
         <header>
-          {category&&<div className="preview-category">{category}</div>}
+          <ArticleLabel className="preview-article-label">{articleLabel.trim()||(category.trim()?`Essay / ${category.trim()}`:'Essay')}</ArticleLabel>
           <h1>{title||'Untitled draft'}</h1>
           <p>{author||'Author'} · {date}</p>
         </header>

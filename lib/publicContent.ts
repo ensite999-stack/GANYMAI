@@ -6,9 +6,11 @@ export type PublicArticle = {
   title:string
   author_name:string
   category_id:number|null
+  label_text:string|null
   tags:string[]
   cover_url:string|null
   published_on:string|null
+  updated_at?:string|null
 }
 
 export type PublicBlock = {
