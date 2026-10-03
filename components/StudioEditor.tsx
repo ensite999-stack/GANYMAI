@@ -20,7 +20,11 @@ type Block={
 }
 type Draft={
   title:string
+  dek:string
   author:string
+  authorBio:string
+  editor:string
+  coverCaption:string
   category:string
   label:string
   icon:'bookmark'|'book'|'document'|'eye'|'leaf'
@@ -36,7 +40,7 @@ type SavedSelection={blockId:string;range:Range}
 
 const uid=()=>typeof crypto!=='undefined'&&'randomUUID' in crypto?crypto.randomUUID():`b-${Date.now()}-${Math.random().toString(36).slice(2)}`
 const fiveParagraphs=():Block[]=>Array.from({length:5},(_,i)=>({id:`paragraph-${i+1}`,type:'paragraph',html:'',text:''}))
-const emptyDraft=():Draft=>({title:'',author:'',category:'',label:'Essay',icon:'bookmark',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
+const emptyDraft=():Draft=>({title:'',dek:'',author:'',authorBio:'',editor:'',coverCaption:'',category:'',label:'Essay',icon:'bookmark',tags:'',cover:'',date:new Date().toISOString().slice(0,10),blocks:fiveParagraphs(),articleId:null,articleSlug:null,articleStatus:'draft'})
 
 function escapeHtml(value:string){
   return value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
@@ -88,7 +92,11 @@ function textFromHtml(html:string){
 export function StudioEditor(){
   const initial=emptyDraft()
   const [title,setTitle]=useState(initial.title)
+  const [dek,setDek]=useState(initial.dek)
   const [author,setAuthor]=useState(initial.author)
+  const [authorBio,setAuthorBio]=useState(initial.authorBio)
+  const [editor,setEditor]=useState(initial.editor)
+  const [coverCaption,setCoverCaption]=useState(initial.coverCaption)
   const [category,setCategory]=useState(initial.category)
   const [articleLabel,setArticleLabel]=useState(initial.label)
   const [labelIcon,setLabelIcon]=useState<Draft['icon']>(initial.icon)
@@ -115,7 +123,11 @@ export function StudioEditor(){
     try{
       const x=JSON.parse(d)
       setTitle(x.title||'')
+      setDek(x.dek||'')
       setAuthor(x.author||'')
+      setAuthorBio(x.authorBio||'')
+      setEditor(x.editor||'')
+      setCoverCaption(x.coverCaption||'')
       setCategory(x.category||'')
       setArticleLabel(x.label||'Essay')
       setLabelIcon(['bookmark','book','document','eye','leaf'].includes(x.icon)?x.icon:'bookmark')
@@ -146,15 +158,19 @@ export function StudioEditor(){
     return()=>document.removeEventListener('selectionchange',capture)
   },[])
 
-  const snapshot=():Draft=>({title,author,category,label:articleLabel,icon:labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
+  const snapshot=():Draft=>({title,dek,author,authorBio,editor,coverCaption,category,label:articleLabel,icon:labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus})
   useEffect(()=>{
     const t=setTimeout(()=>localStorage.setItem('ganymai-draft',JSON.stringify(snapshot())),250)
     return()=>clearTimeout(t)
-  },[title,author,category,articleLabel,labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
+  },[title,dek,author,authorBio,editor,coverCaption,category,articleLabel,labelIcon,tags,cover,date,blocks,articleId,articleSlug,articleStatus])
 
   function loadDraft(d:Draft){
     setTitle(d.title||'')
+    setDek(d.dek||'')
     setAuthor(d.author||'')
+    setAuthorBio(d.authorBio||'')
+    setEditor(d.editor||'')
+    setCoverCaption(d.coverCaption||'')
     setCategory(d.category||'')
     setArticleLabel(d.label||'Essay')
     setLabelIcon(d.icon||'bookmark')
@@ -313,7 +329,7 @@ export function StudioEditor(){
     setNotice(articleId?'Updating published article…':'Publishing…')
     try{
       const categoryId=await resolveCategory(supabase)
-      const articleValues={title:title.trim(),author_name:author.trim(),category_id:categoryId,label_text:articleLabel.trim()||null,label_icon:labelIcon,cover_url:cover.trim()||null,status:'published' as const,published_on:date,updated_at:new Date().toISOString(),tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
+      const articleValues={title:title.trim(),dek:dek.trim()||null,author_name:author.trim(),author_bio:authorBio.trim()||null,editor_name:editor.trim()||null,cover_caption:coverCaption.trim()||null,category_id:categoryId,label_text:articleLabel.trim()||null,label_icon:labelIcon,cover_url:cover.trim()||null,status:'published' as const,published_on:date,updated_at:new Date().toISOString(),tags:tags.split(',').map(x=>x.trim()).filter(Boolean),created_by:user.id}
       let idValue=articleId
       let slugValue=articleSlug
       if(idValue){
@@ -411,6 +427,10 @@ export function StudioEditor(){
       <div className="field-grid">
         <label>Title<input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Article title"/></label>
         <label>Author<input value={author} onChange={e=>setAuthor(e.target.value)} placeholder="Author"/></label>
+        <label className="full">Subtitle / dek<textarea value={dek} onChange={e=>setDek(e.target.value)} placeholder="A concise standfirst shown over the cover image."/></label>
+        <label className="full">Author bio<textarea value={authorBio} onChange={e=>setAuthorBio(e.target.value)} placeholder="Short author biography shown beside the article body."/></label>
+        <label>Editor<input value={editor} onChange={e=>setEditor(e.target.value)} placeholder="Editor name (optional)"/></label>
+        <label>Cover caption<input value={coverCaption} onChange={e=>setCoverCaption(e.target.value)} placeholder="Place, date, photographer / source"/></label>
         <label>Category<input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Type any category"/></label>
         <label>Homepage label<input value={articleLabel} onChange={e=>setArticleLabel(e.target.value)} placeholder="Essay / Human rights and justice" maxLength={120}/></label>
         <label>Homepage icon<select value={labelIcon} onChange={e=>setLabelIcon(e.target.value as Draft['icon'])}><option value="bookmark">Bookmark</option><option value="book">Book</option><option value="document">Document</option><option value="eye">Eye</option><option value="leaf">Leaf</option></select></label>
@@ -482,9 +502,12 @@ export function StudioEditor(){
         <div className="preview-top"><span>PREVIEW</span><button onClick={()=>setPreview(false)}>Close ×</button></div>
         <header>
           <h1>{title||'Untitled draft'}</h1>
+          {dek&&<p className="preview-dek">{dek}</p>}
           <p>{author||'Author'} · {date}</p>
         </header>
         {cover&&<div className="preview-cover" style={{backgroundImage:`url("${cover.replace(/"/g,'\\"')}")`}}/>}
+        {coverCaption&&<p className="preview-cover-caption">{coverCaption}</p>}
+        {(authorBio||editor)&&<aside className="preview-meta">{authorBio&&<p><strong>{author||'Author'}</strong><br/>{authorBio}</p>}{editor&&<p><small>Edited by</small><br/>{editor}</p>}</aside>}
         <div className="preview-body">
           {blocks.map(b=>b.type==='paragraph'
             ?<div className="preview-paragraph" key={b.id} dangerouslySetInnerHTML={{__html:sanitizeRichHtml(editors.current[b.id]?.innerHTML??b.html??escapeHtml(b.text||''))}}/>

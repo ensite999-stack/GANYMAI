@@ -4,7 +4,11 @@ export type PublicArticle = {
   id:string
   slug:string
   title:string
+  dek?:string|null
   author_name:string
+  author_bio?:string|null
+  editor_name?:string|null
+  cover_caption?:string|null
   category_id:number|null
   label_text:string|null
   label_icon:'bookmark'|'book'|'document'|'eye'|'leaf'
