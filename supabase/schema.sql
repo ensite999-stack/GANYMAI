@@ -77,6 +77,7 @@ create table public.subscribers (
   id uuid primary key default gen_random_uuid(),
   email text unique not null,
   locale text not null default 'en' check(locale in ('en','fr','zh-CN','zh-TW')),
+  frequency text not null default 'weekly' check(frequency in ('daily','weekly')),
   created_at timestamptz not null default now()
 );
 

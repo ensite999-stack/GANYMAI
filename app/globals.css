@@ -154,3 +154,74 @@
 .preview-meta{max-width:680px;margin:0 auto 38px;padding:18px 0;border-top:1px solid #ddd;border-bottom:1px solid #ddd;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:12px;line-height:1.5;color:#555}
 .preview-meta p{margin:0}
 @media(max-width:760px){.preview-meta{grid-template-columns:1fr}.preview-cover-caption{margin:-28px 0 30px}}
+
+
+/* Aeon-referenced MORE control and structured footer */
+.more-wrap{display:flex;justify-content:center;align-items:center;margin:42px auto 64px;padding:0 20px}
+.more-wrap-standalone{margin-top:18px}
+.more-button{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:13px 25px;background:#ECEFF1;color:#73777C;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1;letter-spacing:.18em;border:0;border-radius:0;transition:background .2s ease,color .2s ease}
+.more-button:hover,.more-button:focus-visible{background:#181B1F;color:#fff}
+
+.site-footer{display:block!important;min-height:0!important;background:#F3F5F7!important;color:#181B1F!important;padding:64px 7vw 26px!important;text-align:left!important}
+.footer-main,.footer-engage,.footer-bottom{width:min(1400px,100%);margin-left:auto;margin-right:auto}
+.footer-main{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(0,2.2fr);gap:clamp(50px,8vw,120px);align-items:start}
+.footer-brand-block{max-width:300px}
+.footer-brand{font-family:var(--font-brand),Arial,Helvetica,sans-serif;font-size:42px;font-weight:800;letter-spacing:-.04em;line-height:1;margin:0 0 12px}
+.footer-motto{font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.45;margin:0;color:#4E545A}
+.footer-columns{display:grid;grid-template-columns:repeat(3,minmax(130px,1fr));gap:42px}
+.footer-column{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.footer-column h2,.footer-follow h2,.footer-newsletter h2{font-size:10px;font-weight:600;line-height:1.2;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;color:#6D7379}
+.footer-column a{font-size:15px;line-height:1.35;text-decoration:none!important;border:0!important;transition:opacity .18s ease}
+.footer-column a:hover{opacity:.55}
+
+.footer-engage{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(0,2.2fr);gap:clamp(50px,8vw,120px);border-top:1px solid #D3D8DC;margin-top:54px;padding-top:42px}
+.footer-follow{align-self:start}
+.footer-socials{display:flex;align-items:center;gap:14px;margin-top:10px}
+.footer-x{display:grid;place-items:center;width:34px;height:34px;border:1px solid #C8CDD1!important;text-decoration:none!important;transition:background .18s ease,color .18s ease,border-color .18s ease}
+.footer-x:hover{background:#181B1F;color:#fff;border-color:#181B1F!important}
+.footer-x svg{width:17px;height:17px;fill:currentColor}
+
+.footer-newsletter{max-width:780px}
+.footer-newsletter>p{font-size:14px;line-height:1.45;color:#5D6368;margin:0 0 16px}
+.footer-newsletter form{display:grid;grid-template-columns:minmax(220px,1fr) auto auto;gap:12px;align-items:center}
+.footer-newsletter input[type="email"]{width:100%;min-width:0;padding:12px 13px;border:1px solid #C8CDD1;background:#fff;color:#181B1F;border-radius:2px;outline:none}
+.footer-newsletter input[type="email"]:focus{background:#F8F9FA;border-color:#7C8389;outline:none}
+.newsletter-frequency{display:flex;align-items:center;gap:14px;white-space:nowrap}
+.newsletter-frequency label{font-size:12px;color:#4E545A;display:flex;align-items:center;gap:5px;cursor:pointer}
+.newsletter-frequency input{accent-color:#181B1F}
+.footer-newsletter button{min-width:132px;padding:12px 17px;background:#181B1F;color:#fff;border:1px solid #181B1F;font-size:11px;letter-spacing:.12em;text-transform:uppercase;transition:background .18s ease,color .18s ease}
+.footer-newsletter button:hover:not(:disabled){background:#fff;color:#181B1F}
+.footer-newsletter button:disabled{opacity:.5;cursor:default}
+.newsletter-status{font-size:12px!important;margin:10px 0 0!important;color:#4E545A!important}
+.newsletter-privacy{display:inline-block;margin-top:12px;font-size:11px;color:#6D7379;border-bottom:1px solid #AEB4B9!important;text-decoration:none!important}
+
+.footer-bottom{display:grid;grid-template-columns:auto auto 1fr;gap:28px;align-items:center;border-top:1px solid #D3D8DC;margin-top:48px;padding-top:22px;font-size:11px;line-height:1.45;color:#70767C}
+.footer-bottom p{margin:0}
+.footer-bottom nav{display:flex;gap:16px}
+.footer-bottom a{border:0!important;text-decoration:none!important}
+.footer-bottom a:hover{color:#181B1F}
+.footer-note{text-align:right}
+
+@media(max-width:900px){
+  .footer-main,.footer-engage{grid-template-columns:1fr;gap:38px}
+  .footer-columns{gap:28px}
+  .footer-newsletter form{grid-template-columns:1fr auto}
+  .newsletter-frequency{grid-column:1/-1;grid-row:2}
+  .footer-newsletter button{grid-column:2;grid-row:1}
+  .footer-bottom{grid-template-columns:1fr auto}
+  .footer-note{grid-column:1/-1;text-align:left}
+}
+@media(max-width:760px){
+  .more-wrap{margin:34px auto 48px}
+  .site-footer{padding:48px 20px 24px!important}
+  .footer-brand{font-size:38px}
+  .footer-main{gap:34px}
+  .footer-columns{grid-template-columns:1fr 1fr;gap:34px 24px}
+  .footer-column:last-child{grid-column:1/-1}
+  .footer-engage{margin-top:40px;padding-top:34px;gap:34px}
+  .footer-newsletter form{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+  .newsletter-frequency{order:2;grid-column:auto;grid-row:auto}
+  .footer-newsletter button{order:3;grid-column:auto;grid-row:auto;width:100%}
+  .footer-bottom{display:flex;flex-direction:column;align-items:flex-start;gap:11px;margin-top:40px}
+  .footer-note{text-align:left}
+}

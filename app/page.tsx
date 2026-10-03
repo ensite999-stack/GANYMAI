@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { ArticleLabel, type ArticleLabelIcon } from '@/components/ArticleLabel'
-import { BrandName } from '@/components/BrandName'
-import { createPublicContentClient, type PublicArticle } from '@/lib/publicContent'
+import {BrandName} from '@/components/BrandName'
+import {HomeArticleStream,type HomeArticleItem} from '@/components/HomeArticleStream'
+import {createPublicContentClient,type PublicArticle} from '@/lib/publicContent'
 
 export const dynamic='force-dynamic'
 
@@ -22,7 +22,7 @@ export default async function Home(){
       .eq('status','published')
       .order('published_on',{ascending:false})
       .order('created_at',{ascending:false})
-      .limit(8)
+      .limit(20)
 
     articles=(data||[]) as PublicArticle[]
 
@@ -42,6 +42,17 @@ export default async function Home(){
     }
   }
 
+  const streamItems:HomeArticleItem[]=articles.map(article=>({
+    id:article.id,
+    slug:article.slug,
+    title:article.title,
+    author:article.author_name,
+    label:article.label_text?.trim()||'Essay',
+    icon:article.label_icon||'bookmark',
+    cover:article.cover_url,
+    excerpt:excerpt(firstParagraph.get(article.id)||'')
+  }))
+
   return <>
     <section className="hero">
       <div className="eyebrow"><BrandName /> / ESSAYS</div>
@@ -49,30 +60,11 @@ export default async function Home(){
       <p>Clear, vivid writing on the relations that bind a person to nature, power, memory, history and other people.</p>
     </section>
 
-    {!!articles.length&&<section className="home-articles" aria-label="Latest essays">
-      <div className="section-rule"><h2>Latest essays</h2></div>
-      <div className="home-article-list">
-        {articles.map((article,index)=><article className={`home-article-card ${index===0?'lead':''}`} key={article.id}>
-          <Link className="home-card-link" href={`/essay/${article.slug}`}>
-            {article.cover_url&&<div className="home-card-cover">
-              <img src={article.cover_url} alt="" loading={index===0?'eager':'lazy'}/>
-            </div>}
-            <div className="home-card-copy">
-              <ArticleLabel icon={(article.label_icon||'bookmark') as ArticleLabelIcon}>
-                {article.label_text?.trim()||'Essay'}
-              </ArticleLabel>
-              <h2>{article.title}</h2>
-              {firstParagraph.get(article.id)&&<p className="home-card-dek">{excerpt(firstParagraph.get(article.id)!)}</p>}
-              <p className="home-card-author">{article.author_name}</p>
-            </div>
-          </Link>
-        </article>)}
-      </div>
-    </section>}
-
     <section className="manifesto home-manifesto">
       <p><BrandName /> comes from the Ancient Greek <em>γάνυμαι</em>: to brighten up, to be glad. The name is not a promise of optimism. It is a reminder that attention can make the world more vivid.</p>
       <Link href="/about">About <BrandName /> →</Link>
     </section>
+
+    <HomeArticleStream articles={streamItems}/>
   </>
 }
